@@ -4,6 +4,7 @@ import board
 from random import (
     getrandbits,
     randint,
+    random,
     seed,
     uniform
 )
@@ -22,7 +23,7 @@ ON_BRIGHTNESS = 100
 
 # LED groups
 ON = (1, 2, 3, 4, 5, 6)
-BLINK = (7, 8, 9, 10, 11, 12)
+BLINK = (12, 7, 8, 9, 10, 11)
 FLICKER = (13, 14, 15)
 
 # Async functions
@@ -37,20 +38,28 @@ async def flicker(pin, min, max, interval):
 
 async def string_lights(interval, max):
     while True:
-        for pin in range(len(BLINK)):
+        for pin in BLINK:
             for current in range(max):
-                led_driver.set_constant_current(BLINK[pin], current)
+                led_driver.set_constant_current(pin, current)
                 await asyncio.sleep(interval)
-        for pin in range(len(BLINK)):
+        for pin in BLINK:
             for current in range(max):
-                led_driver.set_constant_current(BLINK[pin], max - current)
+                led_driver.set_constant_current(pin, max - current)
                 await asyncio.sleep(interval)
+
+async def blink(pin, interval):
+    while True:
+        led_driver.set_constant_current(pin, 0)
+        await asyncio.sleep(random() * .8)
+        led_driver.set_constant_current(pin, 30)
+        await asyncio.sleep(interval)
 
 
 async def main():
     tasks = [asyncio.create_task(flicker(x, randint(5, 9), randint(12, 17), 0.07)) for x in FLICKER]
-    tasks.append(asyncio.create_task(string_lights(0.03, 30)))
+    blinks = [asyncio.create_task(blink(x, randint(1, 4))) for x in BLINK]
     await asyncio.gather(*tasks)
+    await asyncio.gather(*blinks)
 
 
 # Main Logic
